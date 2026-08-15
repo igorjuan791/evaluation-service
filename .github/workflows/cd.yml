@@ -1,0 +1,47 @@
+name: Evaluation Service CD Pipeline (Deploy ECR)
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+concurrency:
+  group: cd-evaluation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  # 1. Quality Gate antes do Deploy (Go)
+  quality:
+    name: Quality Gate (Lint & Tests)
+    uses: oseiasal/.github/.github/workflows/reusable-go-quality.yml@main
+    with:
+      go-version: '1.22'
+
+  # 2. Security Gate antes do Deploy (SAST Gosec & SCA Trivy)
+  security:
+    name: Security Gate (SAST & SCA)
+    needs: quality
+    uses: oseiasal/.github/.github/workflows/reusable-security.yml@main
+    with:
+      language: 'go'
+      go-version: '1.22'
+      trivy-severity: 'CRITICAL,HIGH'
+      fail-on-critical: true
+
+  # 3. Docker Build & Push para Amazon ECR
+  deploy:
+    name: Docker Build & ECR Push
+    needs: [quality, security]
+    uses: oseiasal/.github/.github/workflows/reusable-docker-push.yml@main
+    with:
+      image-name: 'evaluation-service'
+      dockerfile-path: 'Dockerfile.evaluation'
+      aws-region: 'us-east-1'
+      push-image: true
+      tag-latest: true
+    secrets:
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      AWS_ROLE_TO_ASSUME: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_SESSION_TOKEN: ${{ secrets.AWS_SESSION_TOKEN }}
