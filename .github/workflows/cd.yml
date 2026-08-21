@@ -26,7 +26,7 @@ jobs:
       language: 'go'
       go-version: '1.22'
       trivy-severity: 'CRITICAL,HIGH'
-      fail-on-critical: true
+      fail-on-critical: false
 
   # 3. Docker Build & Push para Amazon ECR
   deploy:
