@@ -49,7 +49,7 @@ func TestRunEvaluationLogic(t *testing.T) {
 		Flag: &Flag{Name: "test-flag", IsEnabled: true},
 		Rule: &TargetingRule{
 			IsEnabled: true,
-			Rules: RuleDefinition{
+			Rules: Rule{
 				Type:  "PERCENTAGE",
 				Value: float64(100),
 			},
@@ -64,7 +64,7 @@ func TestRunEvaluationLogic(t *testing.T) {
 		Flag: &Flag{Name: "test-flag", IsEnabled: true},
 		Rule: &TargetingRule{
 			IsEnabled: true,
-			Rules: RuleDefinition{
+			Rules: Rule{
 				Type:  "PERCENTAGE",
 				Value: float64(0),
 			},
