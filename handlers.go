@@ -15,7 +15,7 @@ type EvaluationResponse struct {
 func (a *App) healthHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
@@ -31,7 +31,7 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 2. Obter a decisão propagando o contexto OpenTelemetry (W3C TraceContext)
-	result, err := a.getDecisionWithContext(r.Context(), userID, flagName)
+	result, err := a.getDecision(r.Context(), userID, flagName)
 	if err != nil {
 		// Se o erro for "não encontrado", retornamos 'false' (comportamento seguro)
 		if _, ok := err.(*NotFoundError); ok {
@@ -46,7 +46,7 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 3. Enviar evento para SQS (assincronamente, preservando o TraceContext para o analytics-service)
 	asyncCtx := DetachSpanContext(r.Context())
-	go a.sendEvaluationEventWithContext(asyncCtx, userID, flagName, result)
+	go a.sendEvaluationEvent(asyncCtx, userID, flagName, result)
 
 	// 4. Retornar a resposta
 	w.WriteHeader(http.StatusOK)

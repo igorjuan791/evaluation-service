@@ -18,13 +18,8 @@ type EvaluationEvent struct {
 	Timestamp time.Time `json:"timestamp"`
 }
 
-// sendEvaluationEvent envia um evento para a fila SQS (wrapper compatível)
-func (a *App) sendEvaluationEvent(userID, flagName string, result bool) {
-	a.sendEvaluationEventWithContext(context.Background(), userID, flagName, result)
-}
-
-// sendEvaluationEventWithContext envia um evento para a fila SQS propagando o traceparent nos MessageAttributes
-func (a *App) sendEvaluationEventWithContext(reqCtx context.Context, userID, flagName string, result bool) {
+// sendEvaluationEvent envia um evento para a fila SQS propagando o traceparent nos MessageAttributes
+func (a *App) sendEvaluationEvent(reqCtx context.Context, userID, flagName string, result bool) {
 	sqsCtx, endSpan := StartChildSpan(reqCtx, "sqs.send", 4, map[string]string{
 		"messaging.system":           "aws_sqs",
 		"messaging.destination.name": "toogle-events",

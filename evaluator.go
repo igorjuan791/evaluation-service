@@ -20,13 +20,8 @@ const (
 	CACHE_TTL = 30 * time.Second
 )
 
-// getDecision é o wrapper principal (compatível com chamadas sem contexto)
-func (a *App) getDecision(userID, flagName string) (bool, error) {
-	return a.getDecisionWithContext(ctx, userID, flagName)
-}
-
-// getDecisionWithContext executa a decisão propagando o contexto de trace OpenTelemetry
-func (a *App) getDecisionWithContext(reqCtx context.Context, userID, flagName string) (bool, error) {
+// getDecision executa a decisão propagando o contexto de trace OpenTelemetry
+func (a *App) getDecision(reqCtx context.Context, userID, flagName string) (bool, error) {
 	// 1. Obter os dados da flag (do cache ou dos serviços)
 	info, err := a.getCombinedFlagInfo(reqCtx, flagName)
 	if err != nil {
