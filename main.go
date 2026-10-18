@@ -106,13 +106,17 @@ func main() {
 		TargetingServiceURL: targetingSvcURL,
 	}
 
+	telemetry := InitTelemetry("evaluation-service")
+
 	// --- Rotas ---
 	mux := http.NewServeMux()
 	mux.HandleFunc("/health", app.healthHandler)
+	mux.HandleFunc("/metrics", telemetry.MetricsHandler)
+	mux.HandleFunc("/chaos/fail", telemetry.ChaosHandler)
 	mux.HandleFunc("/evaluate", app.evaluationHandler)
 
 	log.Printf("Serviço de Avaliação (Go) rodando na porta %s", port)
-	if err := http.ListenAndServe(":"+port, mux); err != nil {
+	if err := http.ListenAndServe(":"+port, telemetry.Middleware(mux)); err != nil {
 		log.Fatal(err)
 	}
 }

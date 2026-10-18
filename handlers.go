@@ -30,8 +30,8 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// 2. Obter a decisão (lógica de cache/serviço está em evaluator.go)
-	result, err := a.getDecision(userID, flagName)
+	// 2. Obter a decisão propagando o contexto OpenTelemetry (W3C TraceContext)
+	result, err := a.getDecisionWithContext(r.Context(), userID, flagName)
 	if err != nil {
 		// Se o erro for "não encontrado", retornamos 'false' (comportamento seguro)
 		if _, ok := err.(*NotFoundError); ok {
@@ -44,13 +44,13 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 3. Enviar evento para SQS (assincronamente)
-	// Isso não bloqueia a resposta para o cliente.
-	go a.sendEvaluationEvent(userID, flagName, result)
+	// 3. Enviar evento para SQS (assincronamente, preservando o TraceContext para o analytics-service)
+	asyncCtx := DetachSpanContext(r.Context())
+	go a.sendEvaluationEventWithContext(asyncCtx, userID, flagName, result)
 
 	// 4. Retornar a resposta
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(EvaluationResponse{
+	_ = json.NewEncoder(w).Encode(EvaluationResponse{
 		FlagName: flagName,
 		UserID:   userID,
 		Result:   result,
