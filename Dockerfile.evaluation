@@ -1,5 +1,5 @@
 # --- Build Stage ---
-FROM golang:1.21-alpine AS builder
+FROM golang:alpine AS builder
 
 WORKDIR /app
 
@@ -12,8 +12,8 @@ RUN go mod download
 # Copy the source code
 COPY . .
 
-# Build the application
-RUN CGO_ENABLED=0 GOOS=linux go build -o main .
+# Upgrade transitive net dependency to patch CVEs and build the application
+RUN go get golang.org/x/net@latest && go mod tidy && CGO_ENABLED=0 GOOS=linux go build -o main .
 
 # --- Final Stage ---
 FROM alpine:latest
