@@ -28,7 +28,9 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error": "user_id e flag_name são obrigatórios"}`, http.StatusBadRequest)
 		return
 	}
-	result, err := a.getDecision(userID, flagName)
+
+	// 2. Obter a decisão propagando o contexto OpenTelemetry (W3C TraceContext)
+	result, err := a.getDecision(r.Context(), userID, flagName)
 	if err != nil {
 		if _, ok := err.(*NotFoundError); ok {
 			result = false
@@ -38,7 +40,12 @@ func (a *App) evaluationHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	go a.sendEvaluationEvent(userID, flagName, result)
+
+	// 3. Enviar evento para SQS (assincronamente, preservando o TraceContext para o analytics-service)
+	asyncCtx := DetachSpanContext(r.Context())
+	go a.sendEvaluationEvent(asyncCtx, userID, flagName, result)
+
+	// 4. Retornar a resposta
 	w.WriteHeader(http.StatusOK)
 	if err := json.NewEncoder(w).Encode(EvaluationResponse{
 		FlagName: flagName,
